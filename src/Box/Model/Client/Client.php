@@ -3,7 +3,30 @@
  * @package     Box
  * @subpackage  Box_Client
  * @author      Chance Garcia
- * @copyright   (C)Copyright 2013 chancegarcia.com
+ * @copyright   (C)Copyright 2013 Chance Garcia, chancegarcia.com
+ *
+ *    The MIT License (MIT)
+ *
+ * Copyright (c) 2013-2016 Chance Garcia
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
 namespace Box\Model\Client;
@@ -287,7 +310,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection, $aSharedLinkHeader);
 
-        $data = $connection->query($uri);
+        $response = $connection->query($uri);
+
+        $data = $response->getContent();
 
         $jsonData = json_decode($data, true);
         /**
@@ -335,7 +360,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
 
-        $data = $connection->query($uri);
+        $response = $connection->query($uri);
+
+        $data = $response->getContent();
 
         $jsonData = json_decode($data, true);
         /**
@@ -404,7 +431,9 @@ class Client extends Model implements ModelInterface
             'parent' => array('id' => $parentFolderId)
         );
 
-        $data = $connection->post($uri, $params, true);
+        $response = $connection->post($uri, $params, true);
+
+        $data = $response->getContent();
 
         $jsonData = json_decode($data, true);
 
@@ -455,7 +484,9 @@ class Client extends Model implements ModelInterface
 
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
-        $json = $connection->put($uri, $params, true);
+        $response = $connection->put($uri, $params, true);
+
+        $json = $response->getContent();
 
         $data = json_decode($json, true);
 
@@ -502,7 +533,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
 
-        $json = $connection->query($uri);
+        $response = $connection->query($uri);
+
+        $json = $response->getContent();
 
         $data = json_decode($json, true);
 
@@ -580,7 +613,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
 
-        $json = $connection->post($uri, $params, true);
+        $response = $connection->post($uri, $params, true);
+
+        $json = $response->getContent();
 
         $data = json_decode($json, true);
 
@@ -649,7 +684,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
 
-        $json = $connection->put($uri, $params, true);
+        $response = $connection->put($uri, $params, true);
+
+        $json = $response->getContent();
 
         $data = json_decode($json, true);
 
@@ -729,7 +766,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
 
-        $json = $connection->post($uri, $params, true);
+        $response = $connection->post($uri, $params, true);
+
+        $json = $response->getContent();
 
         $data = json_decode($json, true);
 
@@ -778,7 +817,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
 
-        $uploaded = $connection->postFile($uri, $file);
+        $response = $connection->postFile($uri, $file);
+
+        $uploaded = $response->getContent();
 
         $data = json_decode($uploaded, true);
 
@@ -807,7 +848,8 @@ class Client extends Model implements ModelInterface
             $params['redirect_uri'] = $redirectUri;
         }
 
-        $json = $connection->post(self::TOKEN_URI, $params);
+        $response = $connection->post(self::TOKEN_URI, $params);
+        $json = $response->getContent();
 
         $data = json_decode($json, true);
 
@@ -859,7 +901,9 @@ class Client extends Model implements ModelInterface
 
         $connection = $this->getConnection();
 
-        $json = $connection->post(self::TOKEN_URI, $params);
+        $response = $connection->post(self::TOKEN_URI, $params);
+        $json = $response->getContent();
+
         $data = json_decode($json, true);
 
         if (null === $data)
@@ -922,7 +966,8 @@ class Client extends Model implements ModelInterface
 
         $connection = $this->getConnection();
 
-        $json = $connection->post(self::REVOKE_URI, $params);
+        $response = $connection->post(self::REVOKE_URI, $params);
+        $json = $response->getContent();
         // @todo add error handling for null data
         $data = json_decode($json, true);
 
@@ -1294,7 +1339,9 @@ class Client extends Model implements ModelInterface
         $connection = $this->getConnection();
         $connection = $this->setConnectionAuthHeader($connection);
 
-        $json = $connection->query($uri);
+        $response = $connection->query($uri);
+
+        $json = $response->getContent();
 
         $data = json_decode($json, true);
 

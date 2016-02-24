@@ -3,19 +3,41 @@
  * @package     Box
  * @subpackage  Box_Connection
  * @author      Chance Garcia
- * @copyright   (C)Copyright 2013 chancegarcia.com
+ * @copyright   (C)Copyright 2013 Chance Garcia, chancegarcia.com
  *
  * connection assumes a valid access token
+ *
+ *    The MIT License (MIT)
+ *
+ * Copyright (c) 2013-2016 Chance Garcia
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
 namespace Box\Model\Connection;
+
+use Box\Http\Response\BoxResponse;
 use Box\Model\Model;
 use Box\Exception\BoxException;
-use Box\Model\Connection\Token\TokenInterface;
-use Box\Model\Connection\ConnectionInterface;
-use Box\Model\Connection\Response\ResponseInterface;
-use Box\Model\Connection\Response\Response;
 use \CURLFile;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class Connection
@@ -31,8 +53,8 @@ class Connection extends Model implements ConnectionInterface
     protected $state;
     protected $requestType = "GET";
 
-    protected $response;
-    protected $responseClass='Box\Model\Connection\Response';
+    protected $authenticationResponse;
+    protected $authenticationResponseClass='Box\Model\Connection\AuthenticationResponse';
 
     /**
      * @var array array of options with the options as the key and the option values as the value
@@ -43,11 +65,11 @@ class Connection extends Model implements ConnectionInterface
     // may need to store the tokens
     public function connect()
     {
-
+        throw new BoxException('method not yet implemented');
     }
 
     /**
-     * @return resource
+     * {@inheritdoc}
      */
     public function initCurl()
     {
@@ -57,25 +79,52 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * @param $ch
+     * {@inheritdoc}
      */
     public function initCurlOpts($ch)
     {
+        // figure out how to log to verbose output to file. maybe make a box logger? or do output buffer capture?
+        //curl_setopt($ch, CURLOPT_VERBOSE, true);
+        // get full response with headers
+        // http://stackoverflow.com/questions/9183178/php-curl-retrieving-response-headers-and-body-in-a-single-request
         curl_setopt($ch , CURLOPT_RETURNTRANSFER , true);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+
         curl_setopt($ch , CURLOPT_SSL_VERIFYPEER , false);
         return $ch;
     }
 
     /**
-     * @param $ch
-     * @return mixed
+     * {@inheritdoc}
      */
     public function getCurlData($ch)
     {
-        $data = curl_exec($ch);
-        return $data;
+        if ($this->getLogger() instanceof LoggerInterface) {
+            $this->getLogger()->debug('before curl_exec curl opts', array(
+                __METHOD__ . ":" . __LINE__,
+                var_export(curl_getinfo($ch), true),
+            ));
+        }
+        $sResponse = curl_exec($ch);
+        if ($this->getLogger() instanceof LoggerInterface) {
+            $this->getLogger()->debug('curl_exec response: ' . $sResponse, array(
+                __METHOD__ . ":" . __LINE__,
+            ));
+        }
+
+        // split curl result into header and body
+        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $header = substr($sResponse, 0, $header_size);
+        $body = substr($sResponse, $header_size) ?: "";
+
+        $oResponse = new BoxResponse($body, $header);
+
+        return $oResponse;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function initAdditionalCurlOpts($ch)
     {
         $opts = $this->getCurlOpts();
@@ -114,9 +163,7 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * GET
-     * @param $uri
-     * @return mixed
+     * {@inheritdoc}
      */
     public function query($uri)
     {
@@ -132,16 +179,14 @@ class Connection extends Model implements ConnectionInterface
 
     public function delete($uri)
     {
+        if ($this->getLogger() instanceof LoggerInterface) {
+            $this->getLogger()->debug("delete uri: " . $uri, array(__METHOD__ . ":" . __LINE__));
+        }
         throw new BoxException('stubbed method. please implement');
     }
 
     /**
-     * @param $uri
-     * @param array|string $params      array will be deprecated in the future; json encoded string will become the only valid value
-     * @param bool|false $nameValuePair this will be deprecated/fully removed in the future since params as a json encoded
-     *                                  string will be the expected value
-     *
-     * @return mixed
+     * {@inheritdoc}
      */
     public function put($uri, $params = array(), $nameValuePair = false)
     {
@@ -177,15 +222,7 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * POST
-     *
-     * @param              $uri
-     * @param array|string $params      will convert array to string; array will be deprecated in the future; json
-     *                                  encoded string will become the only valid value
-     * @param bool|false $nameValuePair this will be deprecated/fully removed in the future since params as a json
-     *                                  encoded string will be the expected value
-     *
-     * @return mixed
+     * {@inheritdoc}
      */
     public function post($uri, $params = array(), $nameValuePair = false)
     {
@@ -221,10 +258,7 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * @param string $pathToFile
-     * @param string $mimeType
-     * @param string $filename name of the file/post name
-     * @return CURLFile
+     * {@inheritdoc}
      */
     public function createCurlFile($pathToFile, $mimeType, $filename)
     {
@@ -233,8 +267,7 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * @param string $file file/path to file
-     * @return mixed
+     * {@inheritdoc}
      */
     public function getMimeType($file)
     {
@@ -245,15 +278,12 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * @param string     $uri
-     * @param string    $file file/path to file
-     * @param int $parentId
-     * @return array|mixed
+     * {@inheritdoc}
      */
     public function postFile($uri, $file, $parentId = 0)
     {
         // @todo allow Content-MD5 header to be set
-        //Post 1-n files, each element of $files array assumed to be absolute
+        // Post 1-n files, each element of $files array assumed to be absolute
         // path to a file.  $files can be array (multiple) or string (one file).
         // Data will be posted in a series of POST vars named $file0, $file1...
         // $fileN
@@ -289,8 +319,7 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * @param array $curlOpts
-     * @return Connection|ConnectionInterface
+     * {@inheritdoc}
      */
     public function setCurlOpts($curlOpts = null)
     {
@@ -303,23 +332,23 @@ class Connection extends Model implements ConnectionInterface
     }
 
     /**
-     * @return array
+     * {@inheritdoc}
      */
     public function getCurlOpts()
     {
         return $this->curlOpts;
     }
 
-    public function setResponseClass($responseClass = null)
+    public function setAuthenticationResponseClass($authenticationResponseClass = null)
     {
-        $this->validateClass($responseClass,'ResponseInterface');
-        $this->responseClass = $responseClass;
+        $this->validateClass($authenticationResponseClass,'AuthenticationResponseInterface');
+        $this->authenticationResponseClass = $authenticationResponseClass;
         return $this;
     }
 
-    public function getResponseClass()
+    public function getAuthenticationResponseClass()
     {
-        return $this->responseClass;
+        return $this->authenticationResponseClass;
     }
 
     public function setClientId($clientId = null)
@@ -366,15 +395,15 @@ class Connection extends Model implements ConnectionInterface
         return $this->requestType;
     }
 
-    public function setResponse($response = null)
+    public function setAuthenticationResponse($authenticationResponse = null)
     {
-        $this->response = $response;
+        $this->authenticationResponse = $authenticationResponse;
         return $this;
     }
 
-    public function getResponse()
+    public function getAuthenticationResponse()
     {
-        return $this->response;
+        return $this->authenticationResponse;
     }
 
     public function setResponseType($responseType = null)
